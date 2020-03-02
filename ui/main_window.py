@@ -1,19 +1,17 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'main_window.ui'
+# Form implementation generated from reading ui file '.\main_window.ui'
 #
-# Created by: PyQt5 UI code generator 5.14.1
+# Created by: PyQt5 UI code generator 5.11.3
 #
 # WARNING! All changes made in this file will be lost!
 
-
 from PyQt5 import QtCore, QtGui, QtWidgets
-
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(815, 598)
+        MainWindow.resize(821, 620)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -29,9 +27,7 @@ class Ui_MainWindow(object):
         self.centralwidget.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor))
         self.centralwidget.setAutoFillBackground(False)
         self.centralwidget.setObjectName("centralwidget")
-        self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.centralwidget)
-        self.verticalLayout_3.setObjectName("verticalLayout_3")
-        self.verticalLayout = QtWidgets.QVBoxLayout()
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.centralwidget)
         self.verticalLayout.setObjectName("verticalLayout")
         self.horizontalLayout_6 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_6.setObjectName("horizontalLayout_6")
@@ -52,6 +48,40 @@ class Ui_MainWindow(object):
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout_6.addItem(spacerItem1)
         self.verticalLayout.addLayout(self.horizontalLayout_6)
+        self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
+        self.label_3 = QtWidgets.QLabel(self.centralwidget)
+        self.label_3.setObjectName("label_3")
+        self.horizontalLayout_3.addWidget(self.label_3)
+        self.textEditConnectAdress = QtWidgets.QTextEdit(self.centralwidget)
+        self.textEditConnectAdress.setMinimumSize(QtCore.QSize(50, 10))
+        self.textEditConnectAdress.setMaximumSize(QtCore.QSize(200, 25))
+        self.textEditConnectAdress.setObjectName("textEditConnectAdress")
+        self.horizontalLayout_3.addWidget(self.textEditConnectAdress)
+        self.label_4 = QtWidgets.QLabel(self.centralwidget)
+        self.label_4.setObjectName("label_4")
+        self.horizontalLayout_3.addWidget(self.label_4)
+        self.textEditConnectPort = QtWidgets.QTextEdit(self.centralwidget)
+        self.textEditConnectPort.setMaximumSize(QtCore.QSize(70, 25))
+        self.textEditConnectPort.setObjectName("textEditConnectPort")
+        self.horizontalLayout_3.addWidget(self.textEditConnectPort)
+        self.pushButtonConnect = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButtonConnect.setMaximumSize(QtCore.QSize(100, 100))
+        self.pushButtonConnect.setObjectName("pushButtonConnect")
+        self.horizontalLayout_3.addWidget(self.pushButtonConnect)
+        spacerItem2 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_3.addItem(spacerItem2)
+        self.label_2 = QtWidgets.QLabel(self.centralwidget)
+        self.label_2.setObjectName("label_2")
+        self.horizontalLayout_3.addWidget(self.label_2)
+        self.textEditMyPort = QtWidgets.QTextEdit(self.centralwidget)
+        self.textEditMyPort.setMaximumSize(QtCore.QSize(70, 25))
+        self.textEditMyPort.setObjectName("textEditMyPort")
+        self.horizontalLayout_3.addWidget(self.textEditMyPort)
+        self.pushButtonStart = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButtonStart.setObjectName("pushButtonStart")
+        self.horizontalLayout_3.addWidget(self.pushButtonStart)
+        self.verticalLayout.addLayout(self.horizontalLayout_3)
         self.label = QtWidgets.QLabel(self.centralwidget)
         self.label.setObjectName("label")
         self.verticalLayout.addWidget(self.label)
@@ -59,7 +89,6 @@ class Ui_MainWindow(object):
         self.progressBar.setProperty("value", 24)
         self.progressBar.setObjectName("progressBar")
         self.verticalLayout.addWidget(self.progressBar)
-        self.verticalLayout_3.addLayout(self.verticalLayout)
         self.widget = QtWidgets.QWidget(self.centralwidget)
         self.widget.setObjectName("widget")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.widget)
@@ -93,7 +122,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_4.addWidget(self.browsButton)
         self.horizontalLayout.addLayout(self.verticalLayout_4)
         self.verticalLayout_2.addLayout(self.horizontalLayout)
-        self.verticalLayout_3.addWidget(self.widget)
+        self.verticalLayout.addWidget(self.widget)
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
@@ -106,6 +135,11 @@ class Ui_MainWindow(object):
         self.radioButtonCBC.setText(_translate("MainWindow", "CBC"))
         self.radioButtonCFB.setText(_translate("MainWindow", "CFB"))
         self.radioButtonOFB.setText(_translate("MainWindow", "OFB"))
+        self.label_3.setText(_translate("MainWindow", "IP:"))
+        self.label_4.setText(_translate("MainWindow", "Port:"))
+        self.pushButtonConnect.setText(_translate("MainWindow", "Connect"))
+        self.label_2.setText(_translate("MainWindow", "My port:"))
+        self.pushButtonStart.setText(_translate("MainWindow", "Start"))
         self.label.setText(_translate("MainWindow", "TextLabel"))
         self.sendButton.setText(_translate("MainWindow", "Send"))
         self.browsButton.setText(_translate("MainWindow", "Brows"))
@@ -119,3 +153,4 @@ if __name__ == "__main__":
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
+
