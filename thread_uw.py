@@ -2,6 +2,7 @@ from PyQt5.QtCore import pyqtSignal, QThread
 import time
 
 class UpdateWindowThread(QThread):
+    '''Thread updates a text of a text browser'''
     signal = pyqtSignal(str)
     def __init__(self):
         QThread.__init__(self)

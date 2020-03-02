@@ -20,23 +20,26 @@ class Communicator:
         print("Initial communicator")
                 
     def print_text(self, text):
+        '''Print text in a console and add the text to the variable (self.text)'''
         print(text)
         self.text = self.text + text
             
     def received_text(self):
+        '''Returns text that has been intercepted \n
+            after calling the method, the stream is cleared
+        '''
         text = self.text
         self.text = ''
         return text
     
     def start_listen(self):
-        if self._stop:
-            return
-        self.print_text(f"start the server\n{self.IP}:{self.PORT} ")
+        if self._stop: return
+        
+        self.print_text(f"start the server\t{self.IP}:{self.PORT} ")
         self.stop = True
         
         self.socket_recv.bind((self.IP, self.PORT))
-        self.socket_recv.listen(1)
-        
+        self.socket_recv.listen(1)       
         
         self.thread_catch_message.start()        
     
@@ -46,6 +49,8 @@ class Communicator:
         self.socket_send.close()
         
     def new_message(self):
+        '''Return True if the stream has new content, and False if if does't '''
+        
         if len(self.text) > 0:
             return True
         else:
