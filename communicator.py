@@ -7,6 +7,7 @@ import sys
 class Communicator:
     def __init__(self, port):
         self.thread_catch_message = threading.Thread(target=self.__catch_messages)
+        self.thread_cms = threading.Thread(target=self.__catch_mfs) #catch message from server
         self.HOST_NAME = socket.gethostname()
         self.IP = socket.gethostbyname(self.HOST_NAME)
         self.PORT = port
@@ -79,20 +80,30 @@ class Communicator:
                 
         print(f"Connected user {addr} is closed")
         conn.close()
+        
+    def __catch_mfs(self):
+        """Catch message from server"""
+        
+        while not self._stop:
+            data = self.socket_send.recv(self.BUFFER_SIZE)
+            if not data:
+                break
+            
+            data = data.decode()
+            print(f"From server: {data}")
     
     def send_message(self, message):
-        self.socket_send.sendall(message.encode())
+        self.socket_send.send(message.encode())
         
     def connect(self, addres, port):
         self.socket_send.connect((addres, port))
+        self.thread_cms.start()
     
     
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         com = Communicator(int(sys.argv[1]))
-        com.start_listen()
-        time.sleep(10)
-        print('START CONNECT')
+        
         com.connect(com.IP,int(sys.argv[2]))
         message = None
         while message != "out":
@@ -100,6 +111,6 @@ if __name__ == '__main__':
             com.send_message(message)
     
     
-    p = input()
+    
     com.stop_listen()
     
