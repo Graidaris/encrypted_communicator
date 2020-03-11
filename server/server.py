@@ -1,6 +1,10 @@
+#!./venv/bin/python
+# -*- coding: utf-8 -*-
+
 import socket
 import threading
 import datetime
+
 
 class Server:
     def __init__(self):
@@ -15,16 +19,25 @@ class Server:
         self.stoped = False
         
         self.connecters = []
+        
+        
+    def set_port(self, port):
+        self.PORT = port
+        
     
-    def start(self):
+    def start(self):        
         self.socket_recv.bind((self.IP, self.PORT))
         self.socket_recv.listen(5)
         self.thread_catch_request.start()
         self.welcome_message()
+        self.__command_handler()
         
+        
+    def __command_handler(self):
         while not self.stoped:
             command = input()
-            self.command_executor(command)
+            self.__command_executor(command)
+            
             
     def welcome_message(self):
         print(
@@ -32,12 +45,14 @@ class Server:
             f"Adress: {self.IP}:{self.PORT}\n"
             f"Host name: {self.HOST_NAME}"
         )
+        
     
-    def command_executor(self, command):
+    def __command_executor(self, command):
         if command == 'stop':
             self.stop()
         elif command == 'conn':
             self.show_conn()
+            
     
     def show_conn(self):
         n = 33
@@ -58,6 +73,7 @@ class Server:
             
         self.socket_recv.close()
         self.socket_send.close()
+        
     
     def __update(self):
         while not self.stoped:
@@ -74,7 +90,7 @@ class Server:
             threading._start_new_thread(self.__resend, (conn, addr))            
             
             
-    def __resend(self, conn, addr):
+    def __handler_data(self, conn):
         while True:
             try:
                 data = conn.recv(self.BUFFER_SIZE)
@@ -84,6 +100,10 @@ class Server:
             
             if not data:
                 break
+            
+            self.__resend()
+            
+    def __resend(self, conn, addr): 
             
             data = data.decode()
             time = datetime.datetime.now()
@@ -96,10 +116,17 @@ class Server:
                         connecter.send(data.encode())
                     except:
                         to_delete.append(connecter)
-            self.delete_connectors(to_delete)
+            self.__delete_connectors(to_delete)
+    
+
             
-            
-    def delete_connectors(self, connecter):
+    def __delete_connectors(self, connecter):
+        """
+        Delete conectors from the array of connectors
+        
+        Args:
+            param1: connecter is an array []
+        """
         for con in connecter:
             try:
                 self.connecters.remove(connecter)
