@@ -1,10 +1,10 @@
 #!./venv/bin/python
 # -*- coding: utf-8 -*-
 
+import datetime
 import socket
 import threading
-import datetime
-
+import pickle
 
 class Server:
     def __init__(self):
@@ -63,7 +63,8 @@ class Server:
             peer_name = c.getpeername()
             print( "| %2d | %16s | %5d |" % (i, peer_name[0], peer_name[1]))
         print("-"*n)
-            
+        
+        
             
     def stop(self):
         self.stoped = True
@@ -87,10 +88,19 @@ class Server:
             
             print(f"{addr} is connected")
             self.connecters.append(conn)
-            threading._start_new_thread(self.__resend, (conn, addr))            
+            threading._start_new_thread(self.__handler_data, (conn, addr))            
             
             
-    def __handler_data(self, conn):
+    def __handler_data(self, conn,  addr):
+        """Handle data
+        
+        Format of the data:
+            [Sifc.ENUM, DATA]
+        
+        """
+        
+        
+        all_data = bytearray()
         while True:
             try:
                 data = conn.recv(self.BUFFER_SIZE)
@@ -101,22 +111,24 @@ class Server:
             if not data:
                 break
             
-            self.__resend()
+            all_data += data
+        self.analyze_data(data)
+        threading._start_new_thread( self.__resend, (conn, data))
             
-    def __resend(self, conn, addr): 
-            
-            data = data.decode()
-            time = datetime.datetime.now()
-            print(time.strftime("%Y-%m-%d %H:%M:%S") + f" {addr[0]}:{addr[1]}: {data}")
-            data =  f"{addr[0]}:{addr[1]}" + data
-            to_delete = []
-            for connecter in self.connecters:
-                if connecter is not conn:
-                    try:
-                        connecter.send(data.encode())
-                    except:
-                        to_delete.append(connecter)
-            self.__delete_connectors(to_delete)
+    
+    def analyze_data(self, data):
+        pass
+    
+    
+    def __resend(self, conn, data):        
+        to_delete = []
+        for connecter in self.connecters:
+            if connecter is not conn:
+                try:
+                    connecter.send(data.encode())
+                except:
+                    to_delete.append(connecter)
+        self.__delete_connectors(to_delete)
     
 
             

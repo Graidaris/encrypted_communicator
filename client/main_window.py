@@ -3,10 +3,13 @@
 
 import os
 import sys
+
 from PyQt5.QtWidgets import QApplication, QMainWindow
+
+from client.thread_uw import UpdateWindowThread
 from client.ui.main_window import Ui_MainWindow
 from communicator.communicator import Communicator
-from client.thread_uw import UpdateWindowThread
+
 
 class MainWindow(QMainWindow):
     def __init__(self):

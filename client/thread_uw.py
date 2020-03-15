@@ -1,8 +1,10 @@
 #!./venv/bin/python
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtCore import pyqtSignal, QThread
 import time
+
+from PyQt5.QtCore import QThread, pyqtSignal
+
 
 class UpdateWindowThread(QThread):
     '''Thread updates a text of a text browser'''
