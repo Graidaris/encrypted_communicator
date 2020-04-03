@@ -22,7 +22,10 @@ class Channel:
             param1: address of the member
         
         """
-        self.members.remove(member)
+        try:
+            self.members.remove(member)
+        except ValueError:
+            pass
     
     def destroy(self):
         """Destroy the channel

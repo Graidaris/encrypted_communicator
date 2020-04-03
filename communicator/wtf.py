@@ -1,6 +1,6 @@
 from enum import Enum
 
-class Sifc(Enum):
+class WTF(Enum):
     """Send information from client
     
     What kind of messages did the server recieved 
