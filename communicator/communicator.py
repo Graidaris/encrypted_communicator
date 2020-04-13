@@ -192,12 +192,11 @@ class Communicator:
         d = conn.recv(self.BUFFER_SIZE)
         d_l = pickle.loads(d)
         if d_l["FILETYPE"] == "str":
-            pass
+            self.recv_str(conn)
         elif d_l["FILETYPE"] == "file":
-            pass
+            self.recv_file(conn, d_l)
         
-    def catch_server(self):
-        
+    def catch_server(self):        
         while not self.stop:
         #accept the server connection
             try:
