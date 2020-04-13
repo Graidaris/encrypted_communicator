@@ -1,14 +1,14 @@
 #!./venv/bin/python
 # -*- coding: utf-8 -*-
 
-import threading
-import socket
-import time
-import sys
-import logging
 import datetime
+import logging
 import os
 import pickle
+import socket
+import sys
+import threading
+import time
 
 
 class Communicator:
@@ -18,7 +18,7 @@ class Communicator:
     
     def __init__(self, port: int):
         
-        self.thread_cms = threading.Thread(target=self.__catch_mfs)  # catch message from server
+        self.thread_cms = threading.Thread(target=self.catch_server)  # catch message from server
         self.HOST_NAME = socket.gethostname()
         self.IP = socket.gethostbyname(self.HOST_NAME)
         self.PORT = port
@@ -40,6 +40,7 @@ class Communicator:
         #end logging settings
         
         logging.info("Communicator was been initialize")
+        self.dir_files = "received_files"
 
     def print_text(self, text: str) -> None:
         '''Print text in a console and add the text to the variable (self.text)'''
@@ -166,9 +167,46 @@ class Communicator:
         self.socket_recv.recv(self.BUFFER_SIZE)
         logging.info("sending the file has been completed")
         
-    def receive(self) -> None:
-        pass
+    def recv_file(self, conn: socket, d: dict) -> None:
+        path = os.path.join(self.dir_files, d['FILENAME'])            
         
+        conn.sendall(pickle.dumps("OK"))
+        with open(d['FILENAME'], 'wb') as f:
+            for i in range(0, self.BUFFER_SIZE):
+                f.write(conn.recv(self.BUFFER_SIZE))
+                
+        conn.sendall(pickle.dumps("DONE"))
+        
+    def recv_str(self, conn: socket) -> None:
+        conn.sendall(pickle.dumps("OK"))
+        while True:
+            message = conn.recv(self.BUFFER_SIZE)
+            if not message:
+                break
+            
+        message_dec = message.decode()
+        self.text += message_dec
+        conn.sendall(pickle.dumps("DONE"))
+        
+    def receive(self, conn: socket) -> None:
+        d = conn.recv(self.BUFFER_SIZE)
+        d_l = pickle.loads(d)
+        if d_l["FILETYPE"] == "str":
+            pass
+        elif d_l["FILETYPE"] == "file":
+            pass
+        
+    def catch_server(self):
+        
+        while not self.stop:
+        #accept the server connection
+            try:
+                server, addr = self.socket_recv.accept()
+            except OSError as e:
+                logging.exception(e)
+                
+            threading._start_new_thread(self.receive, (server,))
+    
         
 
     def connect(self, addres: str, port: int) -> None:
