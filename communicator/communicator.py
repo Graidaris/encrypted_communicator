@@ -12,7 +12,10 @@ import time
 
 
 class Communicator:
-    """
+    """Client <---{dictionary with info of kind of the message}-- Server
+        Client ----{"OK"}-> Server
+        Client <---{data}-- Server
+        Client ----{done thanks}-> Server
     
     """
     
@@ -26,6 +29,7 @@ class Communicator:
         self._stop = False
         self.socket_recv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket_send = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket_recv.bind((self.IP, self.PORT))
         
         self.lock = threading.Lock()
 
@@ -36,7 +40,8 @@ class Communicator:
         log_file_path = "logs"
         log_filename = datetime.datetime.now().strftime("%d_%m_%Y") + '.log'
         fullname_log = os.path.join(log_file_path, log_filename)
-        logging.basicConfig(filename=fullname_log, level=logging.DEBUG)
+        logging.basicConfig(format='%(asctime)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', 
+                            filename=fullname_log, level=logging.DEBUG)
         #end logging settings
         
         logging.info("Communicator was been initialize")
@@ -54,15 +59,14 @@ class Communicator:
         '''
         with self.lock: # check pyqt5 thread lock
             text = self.text
-            self.text = ''
-        
-        return text
-    
+            self.text = ''        
+            return text
 
     def stop(self) -> None:
         self._stop = True
         self.socket_recv.close()
         self.socket_send.close()
+        logging.info("Communicator has been stoped")
 
     def new_message(self) -> bool:
         '''Return True if the stream has new content, and False if if does't '''
@@ -71,59 +75,6 @@ class Communicator:
             return True
         else:
             return False
-
-    def __catch_messages(self) -> None:
-        while not self._stop:
-            try:
-                conn, addr = self.socket_recv.accept()
-            except OSError as e:
-                print(e)
-                return
-
-            self.connectors.append(addr)
-            threading._start_new_thread(
-                self.__processing_message, 
-                (conn, addr)
-            )
-
-    def __processing_message(self, conn: socket, addr: str) -> None:
-        while True:
-            data = conn.recv(self.BUFFER_SIZE)
-            if not data:
-                break
-
-            data = data.decode()
-            self.print_text(str(addr) + ":\t" + str(data))
-
-        print(f"Connected user {addr} is closed")
-        conn.close()
-
-    def __catch_mfs(self) -> None:
-        """Catch message from server"""
-
-        while not self._stop:
-            data = self.socket_recv.recv(self.BUFFER_SIZE)
-            if not data:
-                break
-
-        threading._start_new_thread(
-            self.__processing_mfs, 
-            (data,)
-        )
-            
-    def __processing_mfs(self, data) -> None:
-        """Processing data from the server
-        Dictionary: {"FROM":from, "TO":to, "WTF":wtf}
-        wtf is a like enum File, Text or something else        
-        """
-        #Need something for identificate the kind of a message
-        #send readiness to the server like "U can send me the data"
-        #Client <---{dictionary with info of kind of the message}-- Server
-        #Client ----{"OK"}-> Server
-        #Client <---{data}-- Server
-        #Client ----{done thanks}-> Server
-        
-        pass
 
     def send_message(self, message: str, to: str) -> None:
         """Send the message (text) to the client via server
@@ -142,7 +93,7 @@ class Communicator:
         self.socket_send.recv(self.BUFFER_SIZE)
         logging.info("send message")
         self.socket_send.sendall(message.encode())
-        self.socket_send.recv()
+        self.socket_send.recv(1024)
         logging.info("sending the message has been completed")
         
     def send_file(self, path: str, to: str) -> None:
@@ -164,21 +115,22 @@ class Communicator:
                 self.socket_send.sendall(data)
                 data = f.read(self.BUFFER_SIZE)
         
-        self.socket_recv.recv(self.BUFFER_SIZE)
+        self.socket_send.recv(self.BUFFER_SIZE)
         logging.info("sending the file has been completed")
         
     def recv_file(self, conn: socket, d: dict) -> None:
-        path = os.path.join(self.dir_files, d['FILENAME'])            
-        
+        path = os.path.join(self.dir_files, d['FILENAME'])
         conn.sendall(pickle.dumps("OK"))
+        logging.info(f"Receiving file: {d['FILENAME']}")
         with open(d['FILENAME'], 'wb') as f:
-            for i in range(0, self.BUFFER_SIZE):
+            for i in range(0, d['FILESIZE'], self.BUFFER_SIZE):
                 f.write(conn.recv(self.BUFFER_SIZE))
-                
+        logging.info(f"Receiving {d['FILENAME']} has been complete")
         conn.sendall(pickle.dumps("DONE"))
         
     def recv_str(self, conn: socket) -> None:
         conn.sendall(pickle.dumps("OK"))
+        
         while True:
             message = conn.recv(self.BUFFER_SIZE)
             if not message:
@@ -196,7 +148,7 @@ class Communicator:
         elif d_l["FILETYPE"] == "file":
             self.recv_file(conn, d_l)
         
-    def catch_server(self):        
+    def catch_server(self):
         while not self.stop:
         #accept the server connection
             try:
@@ -205,8 +157,6 @@ class Communicator:
                 logging.exception(e)
                 
             threading._start_new_thread(self.receive, (server,))
-    
-        
 
     def connect(self, addres: str, port: int) -> None:
         """Connect to the server
@@ -216,22 +166,15 @@ class Communicator:
         self.socket_send.connect((addres, port))
         self.thread_cms.start()
         
-    def start_listen(self) -> None:
-        """Start listen port for receive data from the server.
-        
-        """
-        self.thread_cms.start()
-        
-
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        com = Communicator(int(sys.argv[1]))
-
-        com.connect(com.IP, int(sys.argv[2]))
-        message = None
-        while message != "out":
-            message = input("enter message: ")
-            #com.send_message(message)
-
-        com.stop()
+    c = Communicator(5005)
+    input()    
+    c.connect('localhost', 5006)
+    input()
+    c.send_message("alalalalala", "SomeOne")
+    input()
+    c.send_file("D:\\Study\\Paczki\\Aplikacje Semestr6 2019\\part_two\\JO\\TOP17.pdf", "SomeOne")
+    input()
+        
+    c.stop()
