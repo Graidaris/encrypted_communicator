@@ -28,8 +28,7 @@ class Communicator:
         self.BUFFER_SIZE = 1024
         self._stop = False
         self.socket_recv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket_send = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket_recv.bind((self.IP, self.PORT))
+        self.socket_recv.bind(('', self.PORT))
         
         self.lock = threading.Lock()
 
@@ -81,20 +80,17 @@ class Communicator:
         
         
         """
-        #Client ---{dictionary with info of kind of the message}--> Server
-        #Client <---{"OK"}-- Server
-        #Client ----{data}-> Server
-        #Client <---{done thanks}- Server
         logging.info("sending message...")
         d = {"TO":to, "FROM":self.HOST_NAME, "FILETYPE": "str"}  
         logging.info(f"send info {d}")
-        self.socket_send.sendall(pickle.dumps(d))
         
-        self.socket_send.recv(self.BUFFER_SIZE)
-        logging.info("send message")
-        self.socket_send.sendall(message.encode())
-        self.socket_send.recv(1024)
-        logging.info("sending the message has been completed")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as ss:
+            ss.sendall(pickle.dumps(d))            
+            ss.recv(self.BUFFER_SIZE)
+            logging.info("send message")
+            ss.sendall(message.encode())
+            ss.recv(1024)
+            logging.info("sending the message has been completed")
         
     def send_file(self, path: str, to: str) -> None:
         """Send the file to the destination(other client) via server
@@ -106,39 +102,40 @@ class Communicator:
         d = {"TO":to, "FROM": self.HOST_NAME, "FILETYPE": "file",
               "FILENAME": filename, "FILESIZE": filesize}
         logging.info(f"send info {d}")
-        self.socket_send.sendall(pickle.dumps(d))
-        self.socket_send.recv(self.BUFFER_SIZE)
-        logging.info(f"send the file")
-        with open(path, "rb") as f:
-            data = f.read(self.BUFFER_SIZE)
-            while data:
-                self.socket_send.sendall(data)
-                data = f.read(self.BUFFER_SIZE)
         
-        self.socket_send.recv(self.BUFFER_SIZE)
-        logging.info("sending the file has been completed")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as ss:
+            ss.sendall(pickle.dumps(d))
+            ss.recv(self.BUFFER_SIZE)
+            logging.info(f"send the file")
+            with open(path, "rb") as f:
+                data = f.read(self.BUFFER_SIZE)
+                while data:
+                    ss.sendall(data)
+                    data = f.read(self.BUFFER_SIZE)
+            
+            ss.recv(self.BUFFER_SIZE)
+            logging.info("sending the file has been completed")
         
     def recv_file(self, conn: socket, d: dict) -> None:
         path = os.path.join(self.dir_files, d['FILENAME'])
-        conn.sendall(pickle.dumps("OK"))
         logging.info(f"Receiving file: {d['FILENAME']}")
+        conn.sendall(pickle.dumps("OK"))        
         with open(d['FILENAME'], 'wb') as f:
             for i in range(0, d['FILESIZE'], self.BUFFER_SIZE):
                 f.write(conn.recv(self.BUFFER_SIZE))
         logging.info(f"Receiving {d['FILENAME']} has been complete")
         conn.sendall(pickle.dumps("DONE"))
+        conn.close()
         
     def recv_str(self, conn: socket) -> None:
         conn.sendall(pickle.dumps("OK"))
         
-        while True:
-            message = conn.recv(self.BUFFER_SIZE)
-            if not message:
-                break
-            
+        message = conn.recv(self.BUFFER_SIZE)
+                    
         message_dec = message.decode()
         self.text += message_dec
         conn.sendall(pickle.dumps("DONE"))
+        conn.close()
         
     def receive(self, conn: socket) -> None:
         d = conn.recv(self.BUFFER_SIZE)
@@ -149,32 +146,36 @@ class Communicator:
             self.recv_file(conn, d_l)
         
     def catch_server(self):
-        while not self.stop:
+        
+        print("Started listing")
+        while not self._stop:
         #accept the server connection
             try:
                 server, addr = self.socket_recv.accept()
             except OSError as e:
                 logging.exception(e)
-                
+            
+            log_mes = 'New connector: ' + str(server)
+            logging.info(log_mes)
             threading._start_new_thread(self.receive, (server,))
+                
 
     def connect(self, addres: str, port: int) -> None:
         """Connect to the server
         Not the recipient of the message
         
         """
-        self.socket_send.connect((addres, port))
-        self.thread_cms.start()
+        pass
         
+    def start_receive(self, n_listen=5):        
+        self.socket_recv.listen()
+        self.thread_cms.start()
 
 if __name__ == '__main__':
-    c = Communicator(5005)
-    input()    
-    c.connect('localhost', 5006)
-    input()
-    c.send_message("alalalalala", "SomeOne")
-    input()
-    c.send_file("D:\\Study\\Paczki\\Aplikacje Semestr6 2019\\part_two\\JO\\TOP17.pdf", "SomeOne")
-    input()
-        
+    c = Communicator(5005)  
+    print('Start receive test...')
+    c.start_receive()
+    
+    input('stop...')
+    
     c.stop()
