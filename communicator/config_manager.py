@@ -4,7 +4,7 @@ import json
 DEFAULT_CONFIGS = {"FOLDERS": {"LOGING": "Logs",
                             "DOWNLOAD": "Downloads",
                             "PRIVAT_KEY": "priv_key",
-                            "PUBLIC_KEYS": "pub_key"},
+                            "PUBLIC_KEYS": "pub_keys"},
                 "SIZE_RSA_KEY": 3072,
                 "BUFFER_SIZE": 1024}
 

@@ -132,3 +132,8 @@ dmypy.json
 
 .vscode/
 test.py
+test_crypto.py
+test_import.py
+test_import2.py
+priv_key/*
+pub_key/*

@@ -12,7 +12,7 @@ import time
 
 from Crypto.PublicKey import RSA
 
-from .config_manager import ConfigManager, DEFAULT_FILENAME as DEFAULT_CONFIG_FILENAME
+from communicator.config_manager import ConfigManager, DEFAULT_FILENAME as DEFAULT_CONFIG_FILENAME
 
 
 class Communicator:
@@ -29,31 +29,49 @@ class Communicator:
         self.HOST_NAME = socket.gethostname()
         self.IP = socket.gethostbyname(self.HOST_NAME)
         self.PORT = port
-        self.BUFFER_SIZE = 1024
         self._stop = False
         self.socket_recv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket_recv.bind(('', self.PORT))
         
         self.lock = threading.Lock()
         
-        self.priv_RSA = None
-        self.pub_RSA = None
+        self.RSA_key = None
 
         self.connectors = []
         self.content_buffer = []
         self.config = {}
         self.config_manager = ConfigManager()
         self.init_config(config_path)
-        #logging settings
+        self.init_logging()
+        
+        self.BUFFER_SIZE = self.config["BUFFER_SIZE"]
+        
+    def create_ff(self, path, file_name="", mod='w') -> str:
+        """Check if the full path to the file exists 
+        and creates a path if it does not exist. Return full path.
+        """
+        full_path = os.path.join(path, file_name)
+        if not os.path.exists(full_path):
+            if not os.path.exists(path):
+                os.makedirs(path)
+            if file_name != "":                
+                with open(full_path, mod):
+                    pass
+            
+        return full_path
+        
+        
+    def init_logging(self) -> None:
+        """Logging settings"""
+        
         log_filename = datetime.datetime.now().strftime("%d_%m_%Y") + '.log'
-        fullname_log = os.path.join(self.config['FOLDERS']["LOGING_FOLDER"], log_filename)
-        logging.basicConfig(format='%(asctime)s: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', 
+        path = self.config['FOLDERS']["LOGING"]
+        fullname_log = self.create_ff(path, log_filename, "a+")
+        logging.basicConfig(format='%(asctime)s: %(message)s', 
+                            datefmt='%m/%d/%Y %I:%M:%S %p', 
                             filename=fullname_log, level=logging.DEBUG)
-        #end logging settings
-        
-        logging.info("Communicator was been initialize")
-        
-    def init_config(self, path=DEFAULT_CONFIG_FILENAME):
+    
+    def init_config(self, path=DEFAULT_CONFIG_FILENAME) -> None:
         """Init the configs of the communicator"""
         self.config_manager.load_config(path)
         self.config_manager.integrity()
@@ -132,7 +150,7 @@ class Communicator:
             logging.info("sending the file has been completed")
         
     def recv_file(self, conn: socket, d: dict, addr: str) -> None:
-        path = os.path.join(self.config['FOLDERS']["DOWNLOAD_FILE_FOLDER_PATH"], d['FILENAME'])
+        path = os.path.join(self.config['FOLDERS']["DOWNLOAD"], d['FILENAME'])
         logging.info(f"Receiving file: {d['FILENAME']}")
         conn.sendall(pickle.dumps("OK"))        
         with open(path, 'wb') as f:
@@ -161,10 +179,7 @@ class Communicator:
             self.recv_file(conn, d_l, addr)
         
     def catch_server(self):
-        
-        print("Started listing")
         while not self._stop:
-        #accept the server connection
             try:
                 server, addr = self.socket_recv.accept()
             except OSError as e:
@@ -182,36 +197,33 @@ class Communicator:
         """
         pass
         
-    def start_receive(self, n_listen=5):        
+    def start_receive(self, n_listen=5) -> None:
+        """Start receive information from server"""
         self.socket_recv.listen()
         self.thread_cms.start()
         
-    def init_rsa_key(self):
-        PUB_KEY_NAME = "pub_key.pem"
+    def init_rsa_key(self) -> None:
+        """Initialization RSA keys"""
         PRIV_PKEY_NAME = "priv_key.pem"
-        SIZE_RSA_KEY = 3072
+        SIZE_RSA_KEY = self.config["SIZE_RSA_KEY"]
         
-        pub_path = os.path.join(self.config['FOLDERS']["PUBLIC_KEYS"], PUB_KEY_NAME)
-        priv_path = os.path.join(self.config['FOLDERS']["PRIVAT_KEY"], PRIV_PKEY_NAME)
-        if not (os.path.exists(pub_path) or os.path.exists(priv_path)):
+        pub_path = self.config['FOLDERS']["PUBLIC_KEYS"]
+        priv_path = self.config['FOLDERS']["PRIVAT_KEY"]
+        
+        if not os.path.exists(priv_path):
+            logging.info("Generate the RSA key")
+            full_pub_path = self.create_ff(pub_path)
+            full_priv_path = self.create_ff(priv_path, PRIV_PKEY_NAME, 'a+')
+            
             keyPair = RSA.generate(SIZE_RSA_KEY)
-            pubKey = keyPair.publickey()
-            pubKeyPEM = pubKey.exportKey()
             privKeyPEM = keyPair.exportKey()
-            with open(pub_path, "wb") as f:
-                f.write(pubKeyPEM)
                 
-            with open(priv_path, "wb") as f:
+            with open(full_priv_path, "wb") as f:
                 f.write(privKeyPEM)
                 
-            self.pub_RSA = pubKey
-            self.priv_RSA = keyPair
+            self.RSA_key = keyPair
         else:
-            with open(priv_path, "rb") as f:                
+            full_priv_path = os.path.join(priv_path, PRIV_PKEY_NAME)
+            with open(full_priv_path, "rb") as f:                
                 priv_key = RSA.import_key(f.read())
-            self.priv_RSA = priv_key
-            self.pub_RSA = priv_key.publickey()
-        
-
-if __name__ == '__main__':
-    c = Communicator(5005)
+            self.RSA_key = priv_key
