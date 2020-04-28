@@ -5,6 +5,7 @@ import datetime
 import socket
 import threading
 import pickle
+import os
 
 class Server:
     def __init__(self):
@@ -88,44 +89,95 @@ class Server:
             
             print(f"{addr} is connected")
             self.connecters.append(conn)
-            threading._start_new_thread(self.__handler_data, (conn, addr))            
+            threading._start_new_thread(self.__receive, (conn, addr))            
             
             
-    def __handler_data(self, conn,  addr):
-        """Handle data
+    def __receive(self, conn,  addr):
+        """Receive data
         
-        Format of the data:
-            [Sifc.ENUM, DATA]
+        """
+                
+        d = conn.recv(self.BUFFER_SIZE)
+        d_l = pickle.loads(d)
+        if d_l["FILETYPE"] == "str":
+            self.recv_str(conn)
+        elif d_l["FILETYPE"] == "file":
+            self.recv_file(conn, d_l)
+            
+            
+    def send_message(self, message: str, to: str) -> None:
+        """Send the message (text) to the client via server
+        
+        
+        """
+        #Client ---{dictionary with info of kind of the message}--> Server
+        #Client <---{"OK"}-- Server
+        #Client ----{data}-> Server
+        #Client <---{done thanks}- Server
+        
+        d = {"TO":to, "FROM":self.HOST_NAME, "FILETYPE": "str"}          
+        self.socket_send.sendall(pickle.dumps(d))        
+        self.socket_send.recv(self.BUFFER_SIZE)        
+        self.socket_send.sendall(message.encode())
+        self.socket_send.recv(self.BUFFER_SIZE)
+        
+        
+    def send_file(self, path: str, to: str) -> None:
+        """Send the file to the destination(other client) via server
         
         """
         
+        filename = os.path.split(path)[1]
+        filesize = os.path.getsize(path)
+        d = {"TO":to, "FROM": self.HOST_NAME, "FILETYPE": "file",
+              "FILENAME": filename, "FILESIZE": filesize}
         
-        all_data = bytearray()
+        self.socket_send.sendall(pickle.dumps(d))
+        self.socket_send.recv(self.BUFFER_SIZE)
+        
+        with open(path, "rb") as f:
+            data = f.read(self.BUFFER_SIZE)
+            while data:
+                self.socket_send.sendall(data)
+                data = f.read(self.BUFFER_SIZE)
+        
+        self.socket_send.recv(self.BUFFER_SIZE)
+        
+            
+    def recv_file(self, conn: socket, d: dict) -> None:
+        path = os.path.join(self.dir_files, d['FILENAME'])
+        conn.sendall(pickle.dumps("OK"))
+        
+        with open(d['FILENAME'], 'wb') as f:
+            for _ in range(0, d['FILESIZE'], self.BUFFER_SIZE):
+                f.write(conn.recv(self.BUFFER_SIZE))
+                
+        conn.sendall(pickle.dumps("DONE"))
+        
+    def recv_str(self, conn: socket) -> None:
+        conn.sendall(pickle.dumps("OK"))
+        
         while True:
-            try:
-                data = conn.recv(self.BUFFER_SIZE)
-            except:
-                self.delete_connectors([conn])
-                return
-            
-            if not data:
+            message = conn.recv(self.BUFFER_SIZE)
+            if not message:
                 break
-            
-            all_data += data
-        self.analyze_data(data)
-        threading._start_new_thread( self.__resend, (conn, data))
-            
-    
-    def analyze_data(self, data):
-        pass
+        
+        message_dec = message.decode()
+        conn.sendall(pickle.dumps("DONE"))    
     
     
-    def __resend(self, conn, data):        
+    
+    def __resend(self, conn, data):        #need to complete
         to_delete = []
         for connecter in self.connecters:
             if connecter is not conn:
                 try:
-                    connecter.send(data.encode())
+                    if data["FILETYPE"] == "str":
+                        self.send_message(data['MESSAGE'], data['TO'])
+                    elif data["FILETYPE"] == "file":
+                        self.send_file()
+                    
+                    #connecter.send(data.encode())
                 except:
                     to_delete.append(connecter)
         self.__delete_connectors(to_delete)
